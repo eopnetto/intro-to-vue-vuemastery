@@ -1,4 +1,49 @@
-Vue.component('product-review',{
+var eventBus = new Vue()
+
+Vue.component('product-tabs', {
+    props: {
+        reviews: {
+            type: Array,
+            required: false,
+        }
+    },
+    template: `
+    <div>
+        <ul>
+            <span class="tab" v-for="(tab, index) in tabs"
+            @click="selectedTab = tab" 
+            :class="{ activeTab: selectedTab === tab }"
+            :key="tab">
+                {{ tab }}
+            </span>
+        </ul>
+
+        <div v-show="selectedTab === 'Reviews'">
+            <p v-if="!reviews.length">There are no reviews yet.</p>
+            <ul>
+                <li v-for="review in reviews">
+                <p>{{review.name}}</p>
+                <p>{{review.rating}}</p>
+                <p>{{review.review}}</p>
+                </li>
+            </ul>
+        </div>
+        
+        <div v-show="selectedTab === 'Make a Review'">
+            <product-review></product-review>
+        </div>
+        
+    </div>
+    `,
+    data() {
+        return {
+            tabs: ['Reviews', 'Make a Review'],
+            selectedTab: 'Reviews',
+        }
+    },
+})
+
+Vue.component('product-review', {
     template: `
     <form class="review-form" @submit.prevent="onSubmit">
         <p v-if="errors.length">
@@ -32,45 +77,45 @@ Vue.component('product-review',{
     </form>
     `,
 
-    data(){
+    data() {
         return {
-            name:null,
-            review:null,
-            rating:null,
-            errors:[],
+            name: null,
+            review: null,
+            rating: null,
+            errors: [],
         }
     },
-    methods:{
-        onSubmit(){
+    methods: {
+        onSubmit() {
             this.errors = []
-            if(!this.name || !this.review || !this.rating){
-                if(!this.name) this.errors.push("Name required.")
-                if(!this.review) this.errors.push("Review required.")
-                if(!this.rating) this.errors.push("Rating required.")
+            if (!this.name || !this.review || !this.rating) {
+                if (!this.name) this.errors.push("Name required.")
+                if (!this.review) this.errors.push("Review required.")
+                if (!this.rating) this.errors.push("Rating required.")
                 return
             }
 
             let productReview = {
-                name:this.name,
-                review:this.review,
-                rating:this.rating,
+                name: this.name,
+                review: this.review,
+                rating: this.rating,
             }
 
-            this.$emit('review-submitted', productReview)
+            eventBus.$emit('review-submitted', productReview)
 
-            this.name= null
-            this.review= null
+            this.name = null
+            this.review = null
             this.rating = null
         }
     },
 })
 
-Vue.component('product',{
-    props:{
-      premium:{
-        type:Boolean,
-        required:true,
-      },
+Vue.component('product', {
+    props: {
+        premium: {
+            type: Boolean,
+            required: true,
+        },
     },
     template: `<div class="product">
                 <div class="product-image">
@@ -99,30 +144,18 @@ Vue.component('product',{
                             :disabled="!inStock"
                             :class="{ disabledButton: !inStock}"
                     >Add to cart</button>
-                </div>
+                </div>             
                 
-                <div>
-                    <h2>Reviews</h2>
-                    <p v-if="!reviews.length">There are no reviews yet.</p>
-                    <ul>
-                        <li v-for="review in reviews">
-                        <p>{{review.name}}</p>
-                        <p>{{review.rating}}</p>
-                        <p>{{review.review}}</p>
-                        </li>
-                    </ul>
-                </div>
-                
-                <product-review @review-submitted="addReview"></product-review>
+                <product-tabs :reviews="reviews"></product-tabs>
             </div>               `,
 
-    data(){
+    data() {
         return {
             brand: 'Vue MAster',
             product: 'Socks',
-            selectedVariant:0,
-            details:["80% cotton", "20% polyester", "Gender-neutral"],
-            variants:[
+            selectedVariant: 0,
+            details: ["80% cotton", "20% polyester", "Gender-neutral"],
+            variants: [
                 {
                     variantId: 2234,
                     variantColor: "green",
@@ -136,32 +169,29 @@ Vue.component('product',{
                     variantQuantity: 0,
                 },
             ],
-            reviews:[],
+            reviews: [],
         }
     },
-    methods:{
-        addToCart(){
+    methods: {
+        addToCart() {
             this.$emit('add-to-cart', this.variants[this.selectedVariant].variantId)
         },
-        updateProduct(index){
+        updateProduct(index) {
             this.selectedVariant = index
         },
-        addReview(productReview){
-            this.reviews.push(productReview)
-        },
     },
-    computed:{
-        title(){
+    computed: {
+        title() {
             return this.brand + ' ' + this.product
         },
-        image(){
+        image() {
             return this.variants[this.selectedVariant].variantImage
         },
-        inStock(){
+        inStock() {
             return this.variants[this.selectedVariant].variantQuantity
         },
-        shipping(){
-            if(this.premium){
+        shipping() {
+            if (this.premium) {
                 return "Free"
             }
 
@@ -169,16 +199,21 @@ Vue.component('product',{
         },
 
     },
+    mounted() {
+        eventBus.$on('review-submitted', productReview => {
+            this.reviews.push(productReview)
+        })
+    }
 })
 
 var app = new Vue({
     el: '#app',
-    data:{
-        premium:true,
-        cart:[],
+    data: {
+        premium: true,
+        cart: [],
     },
     methods: {
-        updateCart(id){
+        updateCart(id) {
             this.cart.push(id)
         },
     },
